@@ -31,11 +31,12 @@ namespace sakk
                 while (js.Any(p => p.Allapota != Jatekos.Allapot.hazamegy))
                 {
                     Console.Clear();
-
+                    Console.WriteLine("Játékosok:");
                     foreach (var j in js)
                     {
                         Console.WriteLine(j);
                     }
+                    Console.WriteLine("\nMesterek:");
                     foreach (var m in ms)
                     {
                         Console.WriteLine(m);
@@ -44,7 +45,15 @@ namespace sakk
                     Console.WriteLine("Indítás óta eltelt idő: "+ ido/1000.0 + " perc.");
                     Thread.Sleep(200);
                 }
+
+                Console.Clear();
+                Console.WriteLine("VÉGE");
+                Console.WriteLine("Összesen eltelt idő: "+ ido/1000.0 +" perc.");
             },TaskCreationOptions.LongRunning));
+
+            ts.ForEach(t => t.Start());
+
+            Console.ReadLine();
         }
     }
 
@@ -86,7 +95,7 @@ namespace sakk
                 {
                     Allapota = Allapot.lep;
                     Thread.Sleep(Util.rnd.Next(1000, 3001));
-                    if (Util.rnd.Next(0, 100) < 5)
+                    if (Util.rnd.Next(0, 100) < 95)
                     {
                         j.Allapota = Jatekos.Allapot.hazamegy;
                         lock (ListaValaszto)
