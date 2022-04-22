@@ -54,6 +54,10 @@ namespace sakk
                     if (Util.rnd.Next(0, 100) < 5)
                     {
                         j.Allapota = Jatekos.Allapot.hazamegy;
+                        lock (ListaValaszto)
+                        {
+                            Jatekos uj = jatekosok.Where(x => x.Allapota == Jatekos.Allapot.var).FirstOrDefault();
+                        }
                         Monitor.Pulse(ListaValaszto);
                     }
                     else
