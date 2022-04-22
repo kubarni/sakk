@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace sakk
 {
@@ -14,7 +15,36 @@ namespace sakk
             var ms = Enumerable.Range(1, 3)
                 .Select(i => new Mester()).ToList();
 
-            
+            var ts = js.Select(x => new Task(() =>
+            {
+                x.Folyamat(js);
+            },TaskCreationOptions.LongRunning)).ToList();
+
+            ts.AddRange(ms.Select(x => new Task(() =>
+            {
+                 x.Dolgozik(js);
+            },TaskCreationOptions.LongRunning)).ToList());
+
+            ts.Add(new Task(() =>
+            {
+                int ido = 0;
+                while (js.Any(p => p.Allapota != Jatekos.Allapot.hazamegy))
+                {
+                    Console.Clear();
+
+                    foreach (var j in js)
+                    {
+                        Console.WriteLine(j);
+                    }
+                    foreach (var m in ms)
+                    {
+                        Console.WriteLine(m);
+                    }
+                    ido += 200;
+                    Console.WriteLine("Indítás óta eltelt idő: "+ ido/1000.0 + " perc.");
+                    Thread.Sleep(200);
+                }
+            },TaskCreationOptions.LongRunning));
         }
     }
 
@@ -32,6 +62,11 @@ namespace sakk
         {
             Allapota = Allapot.raer;
             Id = Nextid++;
+        }
+
+        public override string ToString()
+        {
+            return $"Id: {Id} Állapot: {Allapota}";
         }
 
         public void Dolgozik(List<Jatekos> jatekosok)
@@ -56,9 +91,16 @@ namespace sakk
                         j.Allapota = Jatekos.Allapot.hazamegy;
                         lock (ListaValaszto)
                         {
-                            Jatekos uj = jatekosok.Where(x => x.Allapota == Jatekos.Allapot.var).FirstOrDefault();
+                            if (jatekosok.Count(x=>(int)x.Allapota >= 1 && (int)x.Allapota <= 3) < 10)
+                            {
+                                Jatekos uj = jatekosok.Where(x => x.Allapota == Jatekos.Allapot.var).FirstOrDefault();
+                                if (uj != null)
+                                {
+                                    uj.Allapota = Jatekos.Allapot.lep;
+                                    Monitor.Pulse(ListaValaszto);
+                                }
+                            }
                         }
-                        Monitor.Pulse(ListaValaszto);
                     }
                     else
                     {
@@ -94,8 +136,20 @@ namespace sakk
         public void Folyamat(List<Jatekos> jatekosok)
         {
             lock (Mester.ListaValaszto)
-                Monitor.Wait(Mester.ListaValaszto);
-            Allapota = Allapot.lep;
+            {
+                if (jatekosok.Count(x => (int)x.Allapota >= 1 && (int)x.Allapota <= 3) < 10)
+                {
+                    Jatekos uj = jatekosok.Where(x => x.Allapota == Jatekos.Allapot.var).FirstOrDefault();
+                    if (uj != null)
+                    {
+                        uj.Allapota = Jatekos.Allapot.lep;
+                    }
+                }
+                else
+                {
+                    Monitor.Wait(Mester.ListaValaszto);
+                }
+            }  
             while (Allapota != Allapot.hazamegy)
             {
                 Thread.Sleep(Util.rnd.Next(1000, 10001));
